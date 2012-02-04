@@ -143,13 +143,13 @@ static struct omap_opp sholest_mpu_rate_table[] = {
 	/*OPP1*/
 	{S125M, VDD1_OPP1, 0x20},
 	/*OPP2*/
-	{S250M, VDD1_OPP2, 0x27},
+	{S250M, VDD1_OPP2, 0x38},
 	/*OPP3*/
-	{S500M, VDD1_OPP3, 0x32},
+	{S500M, VDD1_OPP3, 0x3E},
 	/*OPP4*/
-	{S550M, VDD1_OPP4, 0x38},
+	{S550M, VDD1_OPP4, 0x40},
 	/*OPP5*/
-	{S600M, VDD1_OPP5, 0x3E},
+	{S600M, VDD1_OPP5, 0x44},
 };
 
 #define S80M 80000000
@@ -627,7 +627,7 @@ static struct qtouch_ts_platform_data sholest_ts_platform_data = {
 		.reserve0	= 0x00,
 		.touch_drift	= 0x0a,
 		.drift_susp	= 0x01,
-		.touch_autocal	= 0x32,
+		.touch_autocal	= 0,
 		.sync		= 0,
 		.anti_cal_susp	= 0x01,
 		.anti_cal_sthr	= 0x00,
@@ -647,7 +647,7 @@ static struct qtouch_ts_platform_data sholest_ts_platform_data = {
 		.mov_hyst_init	= 0x14,
 		.mov_hyst_next	= 0x05,
 		.mov_filter	= 0x30,
-		.num_touch	= 0x02,
+		.num_touch	= 0x05,
 		.merge_hyst	= 0x05,
 		.merge_thresh	= 0x05,
 		.amp_hyst	= 0,
