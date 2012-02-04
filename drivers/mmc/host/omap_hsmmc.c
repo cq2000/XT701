@@ -10,8 +10,6 @@
  *	Madhusudhan		<madhu.cr@ti.com>
  *	Mohit Jalori		<mjalori@ti.com>
  *
- * Copyright (C) 2009 Motorola, Inc.
- *
  * This file is licensed under the terms of the GNU General Public License
  * version 2. This program is licensed "as is" without any warranty of any
  * kind, whether express or implied.
@@ -34,7 +32,6 @@
 #include <mach/board.h>
 #include <mach/mmc.h>
 #include <mach/cpu.h>
-#include <mach/control.h>
 
 /* OMAP HSMMC Host Controller Registers */
 #define OMAP_HSMMC_SYSCONFIG	0x0010
@@ -72,6 +69,8 @@
 #define DTO_MASK		0x000F0000
 #define DTO_SHIFT		16
 #define INT_EN_MASK		0x307F0033
+#define BWR_ENABLE              (1 << 4)
+#define BRR_ENABLE              (1 << 5)
 #define INIT_STREAM		(1 << 1)
 #define DP_SELECT		(1 << 21)
 #define DDIR			(1 << 4)
@@ -152,8 +151,8 @@ struct mmc_omap_host {
 	int			initstr;
 	int			slot_id;
 	int			dbclk_enabled;
+        int			response_busy;
 	int 			clks_enabled;
-	/* Clocks lock to prevent race condition */
 	spinlock_t		clk_lock;
 	struct timer_list	inact_timer;
 	struct	omap_mmc_platform_data	*pdata;
@@ -317,12 +316,21 @@ mmc_omap_start_command(struct mmc_omap_host *host, struct mmc_command *cmd,
 	 */
 	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
 	OMAP_HSMMC_WRITE(host->base, ISE, INT_EN_MASK);
-	OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
+	/*OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);*/
 
-	if (cmd->flags & MMC_RSP_PRESENT) {
-		if (cmd->flags & MMC_RSP_136)
-			resptype = 1;
-		else
+        if (host->use_dma)
+        	OMAP_HSMMC_WRITE(host->base, IE,INT_EN_MASK & ~(BRR_ENABLE | BWR_ENABLE));
+        else
+        	OMAP_HSMMC_WRITE(host->base, IE, INT_EN_MASK);
+
+	host->response_busy = 0;
+ 	if (cmd->flags & MMC_RSP_PRESENT) {
+ 		if (cmd->flags & MMC_RSP_136)
+ 			resptype = 1;
+ 		else if (cmd->flags & MMC_RSP_BUSY) {
+ 			resptype = 3;
+ 			host->response_busy = 1;
+ 		} else
 			resptype = 2;
 	}
 
@@ -357,6 +365,15 @@ mmc_omap_start_command(struct mmc_omap_host *host, struct mmc_command *cmd,
 static void
 mmc_omap_xfer_done(struct mmc_omap_host *host, struct mmc_data *data)
 {
+ 	if (!data) {
+ 		struct mmc_request *mrq = host->mrq;
+ 
+ 		host->mrq = NULL;
+ 	/*	mmc_omap_fclk_lazy_disable(host);*/
+ 		mmc_request_done(host->mmc, mrq);
+ 		return;
+ 	}
+ 
 	host->data = NULL;
 
 	if (host->use_dma && host->dma_ch != -1)
@@ -400,7 +417,7 @@ mmc_omap_cmd_done(struct mmc_omap_host *host, struct mmc_command *cmd)
 			cmd->resp[0] = OMAP_HSMMC_READ(host->base, RSP10);
 		}
 	}
-	if (host->data == NULL || cmd->error) {
+	if ((host->data == NULL && !host->response_busy) || cmd->error) {
 		host->mrq = NULL;
 		mmc_request_done(host->mmc, cmd->mrq);
 	}
@@ -411,7 +428,10 @@ omap_hsmmc_inact_timer(unsigned long data)
 {
 	struct mmc_omap_host *host = (struct mmc_omap_host *) data;
 
-	omap_hsmmc_disable_clks(host);
+	if (host->mrq)
+		mod_timer(&host->inact_timer, jiffies + msecs_to_jiffies(1000));
+	else
+		omap_hsmmc_disable_clks(host);
 }
 
 /*
@@ -500,7 +520,7 @@ static irqreturn_t mmc_omap_irq(int irq, void *dev_id)
 
 	omap_hsmmc_enable_clks(host);
 
-	if (host->cmd == NULL && host->data == NULL) {
+	if (host->mrq == NULL) {
 		OMAP_HSMMC_WRITE(host->base, STAT,
 			OMAP_HSMMC_READ(host->base, STAT));
 		return IRQ_HANDLED;
@@ -525,19 +545,24 @@ static irqreturn_t mmc_omap_irq(int irq, void *dev_id)
 				}
 				end_cmd = 1;
 			}
-			if (host->data) {
-				mmc_dma_cleanup(host, -ETIMEDOUT);
+ 			if (host->data || host->response_busy) {
+ 				if (host->data)
+ 					mmc_dma_cleanup(host, -ETIMEDOUT);
+ 				host->response_busy = 0;
 				mmc_omap_reset_controller_fsm(host, SRD);
 			}
 		}
 		if ((status & DATA_TIMEOUT) ||
 			(status & DATA_CRC)) {
-			if (host->data) {
-				if (status & DATA_TIMEOUT)
-					mmc_dma_cleanup(host, -ETIMEDOUT);
+ 			if (host->data || host->response_busy) {
+ 				int err = (status & DATA_TIMEOUT) ?
+ 						-ETIMEDOUT : -EILSEQ;
+ 
+ 				if (host->data)
+ 					mmc_dma_cleanup(host, err);
 				else
-					mmc_dma_cleanup(host, -EILSEQ);
-
+ 					host->mrq->cmd->error = err;
+ 				host->response_busy = 0;
 				mmc_omap_reset_controller_fsm(host, SRD);
 				end_trans = 1;
 			}
@@ -562,9 +587,6 @@ static irqreturn_t mmc_omap_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-
-
-
 /*
  * Switch MMC interface voltage ... only relevant for MMC1.
  *
@@ -579,6 +601,7 @@ static int omap_mmc_switch_opcond(struct mmc_omap_host *host, int vdd)
 
 	if (host->id != OMAP_MMC1_DEVID)
 		return 0;
+
 	/* Disable the clocks */
 	omap_hsmmc_disable_clks(host);
 
@@ -1030,19 +1053,6 @@ static struct mmc_host_ops mmc_omap_ops = {
 	/* NYET -- enable_sdio_irq */
 };
 
-#ifdef CONFIG_MMC_TST
-
-static struct mmc_omap_host *hsmmc_host;
-
-void hsmmc_schedule_4test(int carddetect)
-{
-      printk(KERN_ERR"carddetect=%d\n", carddetect);
-      hsmmc_host->carddetect = carddetect;
-      schedule_work(&hsmmc_host->mmc_carddetect_work);
-}
-EXPORT_SYMBOL(hsmmc_schedule_4test);
-#endif
-
 static int __init omap_mmc_probe(struct platform_device *pdev)
 {
 	struct omap_mmc_platform_data *pdata = pdev->dev.platform_data;
@@ -1229,10 +1239,6 @@ static int __init omap_mmc_probe(struct platform_device *pdev)
 		if (ret < 0)
 			goto err_cover_switch;
 	}
-#ifdef CONFIG_MMC_TST
-		if (host->id == OMAP_MMC1_DEVID)
-			hsmmc_host = host;
-#endif
 
 	return 0;
 
@@ -1294,7 +1300,6 @@ static int omap_mmc_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
 
 #ifdef CONFIG_PM
 static int omap_mmc_suspend(struct platform_device *pdev, pm_message_t state)
@@ -1375,7 +1380,6 @@ static int omap_mmc_resume(struct platform_device *pdev)
 #define omap_mmc_suspend	NULL
 #define omap_mmc_resume		NULL
 #endif
-
 
 static struct platform_driver omap_mmc_driver = {
 	.probe		= omap_mmc_probe,
