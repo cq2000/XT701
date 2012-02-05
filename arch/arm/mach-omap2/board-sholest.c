@@ -141,11 +141,11 @@ char *bp_model = "UMTS";
 static struct omap_opp sholest_mpu_rate_table[] = {
 	{0, 0, 0},
 	/*OPP1*/
-	{S125M, VDD1_OPP1, 0x20},
+	{S125M, VDD1_OPP1, 0x1E},
 	/*OPP2*/
-	{S250M, VDD1_OPP2, 0x38},
+	{S250M, VDD1_OPP2, 0x26},
 	/*OPP3*/
-	{S500M, VDD1_OPP3, 0x3E},
+	{S500M, VDD1_OPP3, 0x36},
 	/*OPP4*/
 	{S550M, VDD1_OPP4, 0x40},
 	/*OPP5*/

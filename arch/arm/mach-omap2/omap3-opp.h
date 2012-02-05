@@ -7,7 +7,7 @@
 #define S600M   1100000000
 #define S550M   800000000
 #define S500M   600000000
-#define S250M   550000000
+#define S250M   300000000
 #define S125M   125000000
 
 /* DSP speeds */
@@ -26,9 +26,9 @@ static struct omap_opp omap3_mpu_rate_table[] = {
 	/*OPP1*/
 	{S125M, VDD1_OPP1, 0x1E},
 	/*OPP2*/
-	{S250M, VDD1_OPP2, 0x36},
+	{S250M, VDD1_OPP2, 0x26},
 	/*OPP3*/
-	{S500M, VDD1_OPP3, 0x3C},
+	{S500M, VDD1_OPP3, 0x36},
 	/*OPP4*/
 	{S550M, VDD1_OPP4, 0x40},
 	/*OPP5*/
