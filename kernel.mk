@@ -24,13 +24,13 @@ PWD=$(shell pwd)
 
 TOPDIR=$(PWD)
 KERNEL_CONF_OUT_DIR= \
-$(PWD)/out/target/pr/generic/obj/PARTITIONS/kernel_intermediates
+$(PWD)/out_2.6.29/target/pr/generic/obj/PARTITIONS/kernel_intermediates
 KERNEL_BUILD_DIR=$(KERNEL_CONF_OUT_DIR)/build
-KERNEL_SRC_DIR=$(PWD)/kernel
+KERNEL_SRC_DIR=$(PWD)/XT701
 KERNEL_CROSS_COMPILE=$(PWD)/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin/arm-eabi-
-MOTO_PREBUILT_DIR=$(PWD)/motorola/bsp/prebuilt/target/images
+MOTO_PREBUILT_DIR=$(PWD)/out_2.6.29/motorola/bsp/prebuilt/target/images
 MOTO_MOD_INSTALL=$(MOTO_PREBUILT_DIR)/system/lib/modules
-DEPMOD=$(PWD)/motorola/bsp/prebuilt/host/bin/depmod
+DEPMOD=$(PWD)/out_2.6.29/motorola/bsp/prebuilt/host/bin/depmod
 
 DEFCONFIGSRC        := ${KERNEL_SRC_DIR}/arch/arm/configs
 LJAPDEFCONFIGSRC    := ${DEFCONFIGSRC}/ext_config
