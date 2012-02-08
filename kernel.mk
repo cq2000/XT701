@@ -35,7 +35,7 @@
 PWD=$(shell pwd)
 
 ifeq ($(DEPMOD),)
-	DEPMOD := `which depmod 2> /dev/null || echo $(PWD)/out/host/linux-x86/bin/depmod`
+	DEPMOD := `which depmod 2> /dev/null || echo $(PWD)/out_2.6.32/host/linux-x86/bin/depmod`
 endif
 
 ifeq ($(KERNEL_CROSS_COMPILE),)
@@ -48,16 +48,16 @@ ifeq ($(TARGET_PRODUCT),)
 endif
 
 ifeq ($(KERNEL_OUT_DIR),)
-	KERNEL_OUT_DIR := out/target/pr/$(TARGET_PRODUCT)/obj/PARTITIONS/kernel_intermediates
+	KERNEL_OUT_DIR := out_2.6.32/target/pr/$(TARGET_PRODUCT)/obj/PARTITIONS/kernel_intermediates
 endif
 
 TOPDIR=$(PWD)
 KERNEL_CONF_OUT_DIR=$(PWD)/$(KERNEL_OUT_DIR)
-MOTO_PREBUILT_DIR := $(PWD)/motorola/bsp/prebuilt/target/images
+MOTO_PREBUILT_DIR := $(PWD)/out_2.6.32/motorola/bsp/prebuilt/target/images
 MOTO_MOD_INSTALL=$(MOTO_PREBUILT_DIR)/system/lib/modules
-DEPMOD=$(PWD)/motorola/bsp/prebuilt/host/bin/depmod
+DEPMOD=$(PWD)/out_2.6.32/motorola/bsp/prebuilt/host/bin/depmod
 KERNEL_BUILD_DIR=$(KERNEL_CONF_OUT_DIR)/build
-KERNEL_SRC_DIR=$(PWD)/kernel
+KERNEL_SRC_DIR=$(PWD)/XT701
 
 DEFCONFIGSRC        := ${KERNEL_SRC_DIR}/arch/arm/configs
 LJAPDEFCONFIGSRC    := ${DEFCONFIGSRC}/ext_config
