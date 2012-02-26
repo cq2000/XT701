@@ -73,7 +73,7 @@ while (<STDIN>) {
 			print STDERR"$file_failed not exist\n";
 		}
 
-		$failed = 1;
+		$failed = 0;
 	}
         close FILE;
 }
