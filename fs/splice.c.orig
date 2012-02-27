@@ -888,8 +888,8 @@ EXPORT_SYMBOL(generic_splice_sendpage);
 /*
  * Attempt to initiate a splice from pipe to file.
  */
-long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
-		    loff_t *ppos, size_t len, unsigned int flags)
+static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+			   loff_t *ppos, size_t len, unsigned int flags)
 {
 	int ret;
 
@@ -908,14 +908,13 @@ long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
 
 	return out->f_op->splice_write(pipe, out, ppos, len, flags);
 }
-EXPORT_SYMBOL(do_splice_from);
 
 /*
  * Attempt to initiate a splice from a file to a pipe.
  */
-long do_splice_to(struct file *in, loff_t *ppos,
-		  struct pipe_inode_info *pipe, size_t len,
-		  unsigned int flags)
+static long do_splice_to(struct file *in, loff_t *ppos,
+			 struct pipe_inode_info *pipe, size_t len,
+			 unsigned int flags)
 {
 	int ret;
 
@@ -931,7 +930,6 @@ long do_splice_to(struct file *in, loff_t *ppos,
 
 	return in->f_op->splice_read(in, ppos, pipe, len, flags);
 }
-EXPORT_SYMBOL(do_splice_to);
 
 /**
  * splice_direct_to_actor - splices data directly between two non-pipes
