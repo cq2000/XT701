@@ -216,13 +216,13 @@ kernel_clean:
 #
 # NOTE: "strip" MUST be done for generated .ko files!!!
 # =============================
-ext_modules: tiwlan_drv 
+ext_modules: tiwlan_drv tiap_drv
 	$(modules_strip)
 
 # TODO:
 # ext_modules_clean doesn't work 
 # wlan, graphic, SMC drivers need to be updated to fix it
-ext_modules_clean: tiwlan_drv_clean 
+ext_modules_clean: tiwlan_drv_clean - tiap_drv_clean
 
 # wlan driver module
 #-------------------
@@ -233,12 +233,20 @@ API_MAKE = env -u MAKECMDGOALS make PREFIX=$(KERNEL_BUILD_DIR) \
 		HOST_PLATFORM=zoom2 \
 		KRNLSRC=$(KERNEL_SRC_DIR) KERNEL_DIR=$(KERNEL_BUILD_DIR)
 WLAN_DRV_PATH = $(PWD)/system/wlan/ti/wilink_6_1/platforms/os/linux
+WLAN_AP_DRV_PATH = $(PWD)/system/wlan/ti/WiLink_AP/platforms/os/linux
 tiwlan_drv:
 	$(API_MAKE) -C $(WLAN_DRV_PATH)
 	cp $(WLAN_DRV_PATH)/tiwlan_drv.ko $(MOTO_MOD_INSTALL)
 
+tiap_drv: $(CONFIG_OUT)
+	$(API_MAKE) -C $(WLAN_AP_DRV_PATH)
+	cp $(WLAN_AP_DRV_PATH)/tiap_drv.ko $(MOTO_MOD_INSTALL)
+
 tiwlan_drv_clean:
 	$(API_MAKE) -C $(WLAN_DRV_PATH) clean
+
+tiap_drv_clean:
+	$(API_MAKE) -C $(WLAN_AP_DRV_PATH) clean
 
 #
 # graphics driver module
