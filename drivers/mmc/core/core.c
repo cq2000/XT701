@@ -201,8 +201,13 @@ void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
 	mrq->done = mmc_wait_done;
 
 	mmc_start_request(host, mrq);
-
-	wait_for_completion(&complete);
+	if (!wait_for_completion_timeout(&complete, HZ * 10)) {
+		printk(KERN_EMERG "%s: Timed out waiting for completion\n",
+		       mmc_hostname(host));
+		printk(KERN_EMERG "%s: cmd 0x%x\n", mmc_hostname(host),
+		       mrq->cmd->opcode);
+		panic("Timed out waiting for mmc completion");
+	}
 }
 
 EXPORT_SYMBOL(mmc_wait_for_req);
@@ -870,7 +875,7 @@ void mmc_rescan(struct work_struct *work)
 
 	/* if there is a card registered, check whether it is still present */
 	if ((host->bus_ops != NULL) &&
-		host->bus_ops->detect && !host->bus_dead) {
+            host->bus_ops->detect && !host->bus_dead) {
 		host->bus_ops->detect(host);
 		/* If the card was removed the bus will be marked
 		 * as dead - extend the wakelock so userspace
@@ -995,7 +1000,7 @@ void mmc_stop_host(struct mmc_host *host)
  */
 int mmc_suspend_host(struct mmc_host *host, pm_message_t state)
 {
-	if (mmc_bus_needs_resume(host) || !(host->bus_resume_flags))
+	if (mmc_bus_needs_resume(host))
 		return 0;
 
 	cancel_delayed_work(&host->detect);

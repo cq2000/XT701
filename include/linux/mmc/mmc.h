@@ -31,6 +31,7 @@
 #define MMC_ALL_SEND_CID          2   /* bcr                     R2  */
 #define MMC_SET_RELATIVE_ADDR     3   /* ac   [31:16] RCA        R1  */
 #define MMC_SET_DSR               4   /* bc   [31:16] RCA            */
+#define MMC_SLEEP_AWAKE		  5   /* ac   [31:16] RCA 15:flg R1b */
 #define MMC_SWITCH                6   /* ac   [31:0] See below   R1b */
 #define MMC_SELECT_CARD           7   /* ac   [31:16] RCA        R1  */
 #define MMC_SEND_EXT_CSD          8   /* adtc                    R1  */
@@ -121,12 +122,14 @@
 #define R1_UNDERRUN		(1 << 18)	/* ex, c */
 #define R1_OVERRUN		(1 << 17)	/* ex, c */
 #define R1_CID_CSD_OVERWRITE	(1 << 16)	/* erx, c, CID/CSD overwrite */
+#define R1_ERROR_MASK		0xffff0000
 #define R1_WP_ERASE_SKIP	(1 << 15)	/* sx, c */
 #define R1_CARD_ECC_DISABLED	(1 << 14)	/* sx, a */
 #define R1_ERASE_RESET		(1 << 13)	/* sr, c */
 #define R1_STATUS(x)            (x & 0xFFFFE000)
 #define R1_CURRENT_STATE(x)	((x & 0x00001E00) >> 9)	/* sx, b (4 bits) */
 #define R1_READY_FOR_DATA	(1 << 8)	/* sx, a */
+#define R1_SWITCH_ERROR		(1 << 7)	/* sx, c */
 #define R1_APP_CMD		(1 << 5)	/* sr, c */
 
 /*
@@ -200,6 +203,12 @@ struct _mmc_csd {
  * OCR bits are mostly in host.h
  */
 #define MMC_CARD_BUSY	0x80000000	/* Card Power up status bit */
+/* Bit 29-30 access mode */
+#define MMC_OCR_REG_ACCESS_MODE_MASK	(0x3 << 29)
+/* Bit 30 is set if device is 4GB - 32GB */
+#define MMC_OCR_REG_ACCESS_MODE_SECTOR	(0x2 << 29)
+/* Bit 30 is low if device is 2G */
+#define MMC_OCR_REG_ACCESS_MODE_BYTE	(0x0 << 29)
 
 /*
  * Card Command Classes (CCC)
@@ -251,9 +260,11 @@ struct _mmc_csd {
 
 #define EXT_CSD_BUS_WIDTH	183	/* R/W */
 #define EXT_CSD_HS_TIMING	185	/* R/W */
-#define EXT_CSD_CARD_TYPE	196	/* RO */
 #define EXT_CSD_REV		192	/* RO */
+#define EXT_CSD_CSD_STRUCTURE	194	/* RO */
+#define EXT_CSD_CARD_TYPE	196	/* RO */
 #define EXT_CSD_SEC_CNT		212	/* RO, 4 bytes */
+#define EXT_CSD_S_A_TIMEOUT	217
 
 /*
  * EXT_CSD field definitions
@@ -265,6 +276,10 @@ struct _mmc_csd {
 
 #define EXT_CSD_CARD_TYPE_26	(1<<0)	/* Card can run at 26MHz */
 #define EXT_CSD_CARD_TYPE_52	(1<<1)	/* Card can run at 52MHz */
+#define EXT_CSD_CARD_TYPE_DUAL_52_1830	(1<<2)
+	/* Dual Data Rate, @ 52MHz, 1.8V or 3V I/O */
+#define EXT_CSD_CARD_TYPE_DUAL_52_12	(1<<3)
+	/* Dual Data Rate, @ 52MHz, 1.2V I/O */
 
 #define EXT_CSD_BUS_WIDTH_1	0	/* Card is in 1 bit mode */
 #define EXT_CSD_BUS_WIDTH_4	1	/* Card is in 4 bit mode */
@@ -278,6 +293,20 @@ struct _mmc_csd {
 #define MMC_SWITCH_MODE_SET_BITS	0x01	/* Set bits which are 1 in value */
 #define MMC_SWITCH_MODE_CLEAR_BITS	0x02	/* Clear bits which are 1 in value */
 #define MMC_SWITCH_MODE_WRITE_BYTE	0x03	/* Set target to value */
+
+/*
+ * MMC_DATA access modes
+ */
+#define MMC_DATA_SECTOR_MODE            0x00    /* Sector access mode */
+#define MMC_DATA_BYTE_MODE              0x01    /* Byte access mode */
+
+/*
+ * MMC_ERASE argument definitions
+ */
+
+#define MMC_ERASE_TYPE_TRIM		(1<<0)	/* Identify write blocks */
+#define MMC_ERASE_TYPE_GARBAGE_COLLECT	(1<<15)	/* Force garbage collect */
+#define MMC_ERASE_TYPE_SECURE		(1<<31)	/* Secure request */
 
 #endif  /* MMC_MMC_PROTOCOL_H */
 

@@ -143,17 +143,17 @@ static struct omap_opp sholest_mpu_rate_table[] = {
 	/*OPP1*/
 	{S125M, VDD1_OPP1, 0x20},
 	/*OPP2*/
-	{S250M, VDD1_OPP2, 0x38},
+	{S250M, VDD1_OPP2, 0x27},
 	/*OPP3*/
-	{S500M, VDD1_OPP3, 0x3E},
+	{S500M, VDD1_OPP3, 0x32},
 	/*OPP4*/
 	{S550M, VDD1_OPP4, 0x40},
 	/*OPP5*/
 	{S600M, VDD1_OPP5, 0x44},
 };
 
-#define S80M 80000000
-#define S160M 160000000
+#define S80M 83000000
+#define S160M 166000000
 
 static struct omap_opp sholest_l3_rate_table[] = {
 	{0, 0, 0},
